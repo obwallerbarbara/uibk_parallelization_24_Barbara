@@ -85,7 +85,7 @@ void calcMandelbrot(Image &image, int size_x, int size_y) {
 			// Check if the distance from the origin becomes
 			// greater than 2 within the max number of iterations.
 			while ((x * x + y * y <= 2 * 2) && (num_iterations < max_iterations)) {
-				float x_tmp = x * x - y * y + cx;
+				float x_tmp = x * x - y * y + cx; // the only thing that changes from one for-loop iteration to the next is cx
 				y = 2 * x * y + cy;
 				x = x_tmp;
 				num_iterations += 1;
@@ -96,7 +96,7 @@ void calcMandelbrot(Image &image, int size_x, int size_y) {
 
 			auto [red, green, blue] = HSVToRGB(value, 1.0, 1.0);
 
-			int channel = 0;
+			int channel = 0; // what index does: y * size_x * num_channels + x * num_channels + channel
 			image[index(pixel_y, pixel_x, size_y, size_x, channel++)] = (uint8_t)(red * UINT8_MAX);
 			image[index(pixel_y, pixel_x, size_y, size_x, channel++)] = (uint8_t)(green * UINT8_MAX);
 			image[index(pixel_y, pixel_x, size_y, size_x, channel++)] = (uint8_t)(blue * UINT8_MAX);
