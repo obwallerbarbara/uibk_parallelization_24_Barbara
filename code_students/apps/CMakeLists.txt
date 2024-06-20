@@ -1,6 +1,21 @@
 cmake_minimum_required(VERSION 3.10)
 
 
+add_executable (run_full_code_parallel
+    main_full_code_parallel.cpp
+    )
+
+target_include_directories(run_full_code_parallel
+    PUBLIC ${CODE_INCLUDE_DIR}
+)
+
+target_link_libraries(run_full_code_parallel
+    PUBLIC utilities
+    PUBLIC sim_setup
+    PUBLIC solver
+)
+
+
 add_executable (run_full_code
     main_full_code.cpp
     )
