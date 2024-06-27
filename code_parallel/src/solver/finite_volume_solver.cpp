@@ -427,9 +427,112 @@ void finite_volume_solver::apply_boundary_conditions(grid_3D &spatial_grid, flui
 
 			// TBD by students 
 
+			size_buff = 2 * Nx * Ny;
+			std::vector<double> buff_send_z(size_buff);
+			std::vector<double> buff_recv_z(size_buff);
+
+			// get destination rank
+			dest_rank = parallel_handler.get_right();
+			src_rank = parallel_handler.get_left();
+
+			tag_send = 0;
+			tag_recv = 0;
+
+			// prepare buffer to be send
+			i_buff=0;
+			for (int ix = 0; ix < spatial_grid.get_num_cells(0); ++ix) {
+				for (int iy = 0; iy < spatial_grid.get_num_cells(1); ++iy) {
+					for (int iz = 0; iz < 2; ++iz) {
+						buff_send_z[i_buff] = current_fluid.fluid_data[i_field](ix, iy, Nz-2+iz);
+						// buff_Send_x(ix, iy, iz) = current_fluid.fluid_data[i_field](Nx - 2 + ix, iy, iz);
+						i_buff++;
+					}
+				}
+			}
+
+			status;
+			// Send and receive data
+			MPI_Sendrecv(&buff_send_z[0], size_buff, MPI_DOUBLE, dest_rank, tag_send,
+	            &buff_recv_z[0], size_buff, MPI_DOUBLE, src_rank, tag_recv, parallel_handler.comm3D, &status);
+			// MPI_Sendrecv(&buff_send_x[0], size_buff, MPI_DOUBLE, dest_rank, tag_send,
+	        //     &buff_recv_x[0], size_buff, MPI_DOUBLE, src_rank, tag_recv, parallel_handler.comm3D, &status);
+
+
+			// Finally, assign data - either directly or from receive buffer
+			if(parallel_handler.get_left()==MPI_PROC_NULL) { // This is probably what's meant by "do parallel boundaries where necessary"(?)
+				for (int ix = 0; ix < spatial_grid.get_num_cells(0); ++ix) {
+					for (int iy = 0; iy < spatial_grid.get_num_cells(1); ++iy) {
+						for (int iz = -1; iz >= -2; --iz) {
+							current_fluid.fluid_data[i_field](ix, iy, iz) = current_fluid.fluid_data[i_field](ix, iy, iz + 1);
+						}
+					}
+				}
+			} else {
+				i_buff=0;
+				for (int ix = 0; ix < spatial_grid.get_num_cells(0); ++ix) {
+					for (int iy = 0; iy < spatial_grid.get_num_cells(1); ++iy) {
+						for (int iz = 0; iz < 2; ++iz) {
+							current_fluid.fluid_data[i_field](ix, iy, iz-2) = buff_recv_x[i_buff];
+							i_buff++;
+						}
+					}
+				}
+			}
+
+
+
+
+
+			// Upper z boundary
+
+			// next, get data from neighbouring rank on the right and send data to rank on the left.
+
+			// get distination rank
+			dest_rank = parallel_handler.get_left();
+			src_rank = parallel_handler.get_right();
+
+			tag_send = 5;
+			tag_recv = 5;
+
+			// prepare buffer to be send
+			i_buff=0;
+			for (int ix = 0; ix < spatial_grid.get_num_cells(0); ++ix) {
+				for (int iy = 0; iy < spatial_grid.get_num_cells(1); ++iy) {
+					for (int iz = 0; iz < 2; ++iz) {
+						buff_send_z[i_buff] = current_fluid.fluid_data[i_field](ix, iy, iz - 2); // iz or iz-2. 
+						i_buff++;
+					}
+				}
+			}
+
+
+			// Send and receive data
+			MPI_Sendrecv(&buff_send_z[0], size_buff, MPI_DOUBLE, dest_rank, tag_send,
+	            &buff_recv_z[0], size_buff, MPI_DOUBLE, src_rank, tag_recv, parallel_handler.comm3D, &status);
+
+			// Finally, assign data - either directly or from receive buffer
+			if(parallel_handler.get_right()==MPI_PROC_NULL) {
+				for (int ix = 0; ix < spatial_grid.get_num_cells(0); ++ix) {
+					for (int iy = 0; iy < spatial_grid.get_num_cells(1); ++iy) {
+						for (int iz = 0; iz < spatial_grid.get_num_cells(2) + 2; ++iz) {
+							current_fluid.fluid_data[i_field](ix, iy, iz) = current_fluid.fluid_data[i_field](ix, iy, iz - 1);
+						}
+					}
+				}
+
+			} else {
+				i_buff=0;
+				for (int ix = 0; ix < spatial_grid.get_num_cells(0); ++ix) {
+					for (int iy = 0; iy < spatial_grid.get_num_cells(1); ++iy) {
+						for (int iz = 0; iz < 2; ++iz) {
+							current_fluid.fluid_data[i_field](ix, iy, Nz + iz) = buff_recv_z[i_buff];
+							i_buff++;
+						}
+					}
+				}
+			}
 		}
 	}
-
 }
 
 
@@ -522,7 +625,7 @@ void finite_volume_solver::transform_fluid_to_characteristic(fluid &current_flui
 }
 
 double finite_volume_solver::get_CFL(grid_3D &spatial_grid, fluid &current_fluid) {
-	double CLF_number = 0.0;
+	double CFL_number = 0.0;
 	double delta_min = std::min(spatial_grid.x_grid.get_dx(), std::min(spatial_grid.y_grid.get_dx(), spatial_grid.z_grid.get_dx()));
 	// if(rank==0) {
 	// 	std::cout << " delta (CFL): " << delta_min << "\n";
@@ -533,20 +636,26 @@ double finite_volume_solver::get_CFL(grid_3D &spatial_grid, fluid &current_fluid
 			for (int iz = 0; iz < spatial_grid.get_num_cells(2); ++iz) {
 				current_fluid.get_fluid_cell(quantities_local, ix, iy, iz);
 				double v_max = fluid_physics.get_lambda_abs_max(quantities_local);
-				CLF_number = std::max(CLF_number, v_max / delta_min);
+				CFL_number = std::max(CFL_number, v_max / delta_min);
 			}
 		}
 	}
 #ifdef PARALLEL_VERSION
 	// TBD by students
+	double CFL_number_local = CFL_number; 
+	// Allreduce sends the minimum/maximum/sum/... of sendbuf (in this case CFL_number_local) to receivebuf (in this case CFL_number). 
+	// As we hand MPI_MIN as an argument, MPI_Allreduce will send the minimum. 
+	MPI_Allreduce(&CFL_number_local, &CFL_number, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD); 
+	std::cout << "CFL Number of rank " << rank << " is: " << CFL_number_local << std::endl;
+
 
 #endif
 
 	if(rank==0) {
-		std::cout << " CFL number " << CLF_number << "\n";
+		std::cout << " CFL number " << CFL_number << "\n";
 	}
 
-	return CLF_number;
+	return CFL_number;
 }
 
 #ifdef PARALLEL_VERSION
