@@ -61,9 +61,9 @@ int main(int argc, char *argv[]) {
 	bound_up[2] = 0.5;
 
 	std::vector<int> num_cells(3);
-	num_cells[0] = 128;
-	num_cells[1] = 128;
-	num_cells[2] = 128;
+	num_cells[0] = 32; // 32 would be faster than 128. 
+	num_cells[1] = 32;
+	num_cells[2] = 32;
 
 
 	std::vector<int> tasks(3);

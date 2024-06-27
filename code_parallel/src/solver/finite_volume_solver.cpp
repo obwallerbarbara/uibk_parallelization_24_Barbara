@@ -645,6 +645,7 @@ double finite_volume_solver::get_CFL(grid_3D &spatial_grid, fluid &current_fluid
 	double CFL_number_local = CFL_number; 
 	// Allreduce sends the minimum/maximum/sum/... of sendbuf (in this case CFL_number_local) to receivebuf (in this case CFL_number). 
 	// As we hand MPI_MIN as an argument, MPI_Allreduce will send the minimum. 
+	// All damit später alle nodes denselben Wert haben, nicht nur einer. 
 	MPI_Allreduce(&CFL_number_local, &CFL_number, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD); 
 	std::cout << "CFL Number of rank " << rank << " is: " << CFL_number_local << std::endl;
 
