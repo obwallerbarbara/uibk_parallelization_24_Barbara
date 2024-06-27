@@ -17,6 +17,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+cmake -DCMAKE_PREFIX_PATH="/scratch/c703429/software/hdf5-1.14.4-2" ..
 
 # set standard flags
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")

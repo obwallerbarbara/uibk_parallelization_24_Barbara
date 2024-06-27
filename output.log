@@ -1,0 +1,59 @@
+No arguments given, using default size 1344x768
+Define image
+Hi from rank 0 of 8
+Still alive after initialize
+before scatter
+Define image
+Hi from rank 1 of 8
+Still alive after initialize
+Define image
+Hi from rank 4 of 8
+Still alive after initialize
+Define image
+Hi from rank 3 of 8
+Still alive after initialize
+Define image
+Hi from rank 6 of 8
+Still alive after initialize
+Define image
+Hi from rank 5 of 8
+Still alive after initialize
+Define image
+Hi from rank 7 of 8
+Still alive after initialize
+Define image
+Hi from rank 2 of 8
+Still alive after initialize
+before scatter
+before scatter
+before scatter
+before scatter
+before scatter
+before scatter
+before scatter
+after scatter
+after scatter
+after scatter
+after scatter
+after scatter
+after scatter
+after scatter
+after scatter
+before gather
+before gather
+before gather
+after gather
+before gather
+before gather
+after gather
+before gather
+before gather
+after gather
+before gather
+after gather
+after gather
+after gather
+after gather
+Mandelbrot set calculation for 1344x768 took: 2691 ms.
+stbi_write
+after gather
